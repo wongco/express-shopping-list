@@ -31,35 +31,62 @@ router.post('/', (req, res, next) => {
   });
 });
 
+/** middleware for route to check that id is valid */
+router.use('/:id', (req, res, next) => {
+  let targetIdx = cartItems.findIndex(item => {
+    return item.id === +req.params.id;
+  });
+
+  if (targetIdx === -1) {
+    const error = new Error('Resource could not be found.');
+    error.status = 404;
+    return next(error);
+  }
+  return next();
+});
+
 /** this route should display a single item’s name and price. */
 router.get('/:id', (req, res, next) => {
   const targetItem = cartItems.find(item => {
     // the plus coerces req.params.id into number
-    return item.id == +req.params.id;
+    return item.id === +req.params.id;
   });
+
   return res.json(targetItem);
 });
 
 /** this route should modify a single item’s name and/or price. */
 router.patch('/:id', (req, res, next) => {
   const targetItem = cartItems.find(item => {
-    return item.id == +req.params.id;
+    return item.id === +req.params.id;
   });
 
+  // checks for blank name
+  if (!req.body.item.name) {
+    const error = new Error('Name cannot be blank.');
+    error.status = 400;
+    return next(error);
+  }
+  // checks if patch price is too high
+  if (req.body.item.price > 5) {
+    const error = new Error('Price is too high. Must be lower than 5.00');
+    error.status = 400;
+    return next(error);
+  }
   // update details of item in cartItems
   targetItem.name = req.body.item.name;
   targetItem.price = req.body.item.price;
 
   return res.json({
-    message: 'Item details updated',
+    message: 'Item details updated.',
     item: targetItem
   });
 });
 
 /** this route should allow you to delete a specific item from the array. */
 router.delete('/:id', (req, res, next) => {
-  const targetIdx = cartItems.indexOf(item => {
-    return item.id == +req.params.id;
+  const targetIdx = cartItems.findIndex(item => {
+    return item.id === +req.params.id;
   });
 
   const deletedItem = cartItems.splice(targetIdx, 1);
@@ -68,13 +95,6 @@ router.delete('/:id', (req, res, next) => {
     message: 'Item deleted from cart.',
     item: deletedItem
   });
-});
-
-/** 404 catch all for router */
-router.use((req, res, next) => {
-  const error = new Error('Resource could not be found.');
-  error.status = 404;
-  return next(error);
 });
 
 // exports router for app.js use
